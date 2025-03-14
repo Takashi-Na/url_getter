@@ -1,31 +1,57 @@
-function logAllTabsWithCurrentFlag() {
+const socket = new WebSocket('ws://localhost:8080');
+
+socket.onerror = (error) => {
+  console.error(`WebSocket Error: ${error}`);
+};
+
+socket.onclose = (event) => {
+  console.log(`WebSocket connection closed: ${event.code} ${event.reason}`);
+};
+
+function isSocketConnected() {
+  return socket.readyState === WebSocket.OPEN;
+}
+
+function sendTabsInfoToWebSocket(tabsInfo) {
+  if (isSocketConnected()) {
+    socket.send(JSON.stringify(tabsInfo));
+  } else {
+    console.error('WebSocket is not connected. Unable to send data.');
+  }
+}
+
+function logAndSendAllTabsWithCurrentFlag() {
   chrome.tabs.query({}, (tabs) => {
     console.log('Tab state update:');
     
     chrome.tabs.query({ active: true, currentWindow: true }, (activeTabs) => {
       const currentTabId = activeTabs[0]?.id;
 
-      tabs.forEach((tab, index) => {
+      const tabsInfo = tabs.map((tab, index) => {
         if (tab.url) {
           const isCurrent = tab.id === currentTabId ? '[CURRENT]' : '';
           console.log(`${index + 1}. ${tab.url} ${isCurrent}`);
+          return {
+            index: index + 1,
+            url: tab.url,
+            isCurrent: tab.id === currentTabId
+          };
         }
-      });
+        return null;
+      }).filter(Boolean);
+
+      sendTabsInfoToWebSocket(tabsInfo);
     });
   });
 }
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.status === 'complete') {
-    logAllTabsWithCurrentFlag();
+    logAndSendAllTabsWithCurrentFlag();
   }
 });
 
-// タブを選択した時
-chrome.tabs.onActivated.addListener(logAllTabsWithCurrentFlag);
-// 別windowへ移動時
-chrome.tabs.onAttached.addListener(logAllTabsWithCurrentFlag);
-// windowから切り離し時
-chrome.tabs.onDetached.addListener(logAllTabsWithCurrentFlag);
-// 同一window内で位置変更時
-chrome.tabs.onMoved.addListener(logAllTabsWithCurrentFlag);
+chrome.tabs.onActivated.addListener(logAndSendAllTabsWithCurrentFlag);
+chrome.tabs.onAttached.addListener(logAndSendAllTabsWithCurrentFlag);
+chrome.tabs.onDetached.addListener(logAndSendAllTabsWithCurrentFlag);
+chrome.tabs.onMoved.addListener(logAndSendAllTabsWithCurrentFlag);
