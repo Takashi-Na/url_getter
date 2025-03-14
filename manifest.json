@@ -1,22 +1,11 @@
 {
-  "manifest_version": 3,
-  "name": "URL Getter",
+  "manifest_version": 2,
+  "name": "Tab List Logger",
   "version": "1.0",
-  "permissions": ["activeTab", "tabs"],
+  "description": "Logs a list of open tabs to the console when a tab is loaded",
+  "permissions": ["tabs"],
   "background": {
-    "service_worker": "scripts/background.js"
-  },
-  "action": {
-    "default_popup": "popup.html",
-    "default_icon": {
-      "16": "images/wolf.png",
-      "48": "images/wolf.png",
-      "128": "images/wolf.png"
-    }
-  },
-  "icons": {
-    "16": "images/wolf.png",
-    "48": "images/wolf.png",
-    "128": "images/wolf.png"
+    "scripts": ["scripts/background.js"],
+    "persistent": false
   }
 }
